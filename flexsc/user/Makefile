@@ -3,10 +3,13 @@ obj=$(src:.c=.o)
 exe=$(src:.c=)
 # inc=syscall_info.h 
 
-default:
+default: test2
 	gcc -g $(src) -o $(exe) $(inc) -I. -lflexsc -lpthread
 test: test.c
 	gcc -g test.c -o test $(inc) -I. -lflexsc -lpthread
+
+test2: test_flexsc_open_read.c
+	gcc -g test_flexsc_open_read.c -o test2 $(inc) -I. -lflexsc -lpthread
 
 run:
 	./$(exe)

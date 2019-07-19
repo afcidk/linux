@@ -36,7 +36,7 @@ int systhread_main(void *arg)
         ssleep(1);
         for (idx = 0; idx<nentry; ++idx) {
             if (info->sysentry[idx].rstatus == FLEXSC_STATUS_SUBMITTED) {
-                printk("work\n");
+                printk("work %ld\n", flexsc_works[idx].work_entry->sysnum);
                 info->sysentry[idx].rstatus = FLEXSC_STATUS_BUSY;
 
                 // open a thread to handle syscall
@@ -64,8 +64,7 @@ do_syscall(unsigned int sysname, struct pt_regs *regs) {
     printk("Do syscall %d\n", sysname);
 
     if (likely(sysname < 500)) {
-        sys_call_table[sysname](regs);
-		return regs->ax;
+		return sys_call_table[sysname](regs);
     }
     return -ENOSYS;
 }
@@ -73,7 +72,6 @@ do_syscall(unsigned int sysname, struct pt_regs *regs) {
 struct flexsc_sysentry *do_flexsc_register(struct flexsc_init_info *user_info)
 {
     struct flexsc_init_info *info = kmalloc(sizeof(struct flexsc_init_info), GFP_KERNEL);
-    struct flexsc_sysentry *k_sysentry;
     copy_from_user(info, user_info, sizeof(struct flexsc_init_info));
     nentry = info->nentry;
     printk("nentry: %lu\n", info->nentry);
@@ -86,9 +84,12 @@ struct flexsc_sysentry *do_flexsc_register(struct flexsc_init_info *user_info)
 
     up_read(&current->mm->mmap_sem);
 
+    syscall_regs = kmalloc(sizeof(struct pt_regs), GFP_KERNEL);
     flexsc_create_workqueue("flexsc_workqueue");
     alloc_workstruct(info);
+	/*
     systhread = kthread_run(systhread_main, info, "systhread_main");
+	*/
 
     return 0;
 }
@@ -99,7 +100,6 @@ void alloc_workstruct(struct flexsc_init_info *info)
     int nentry = info->nentry; /* Number of sysentry */
     int i;
     printk("INFO Allocating work_struct(#%d)\n", nentry);
-    /* 워크 스트럭를 엔트리 갯수만큼 할당 받기 */
     flexsc_works = (struct work_struct *)kmalloc(sizeof(struct work_struct) * nentry, GFP_KERNEL);
 
     printk("Initializing: Binding work_struct and work_handler\n");
@@ -145,30 +145,22 @@ void flexsc_free_works(struct work_struct *flexsc_works)
         kfree(&flexsc_works[i]);
 }
 
-static void flexsc_work_handler(struct work_struct *work)
+static __always_inline void flexsc_work_handler(struct work_struct *work)
 {
     /* Here is the place where system calls are actually executed */
-    static int cnt = 0;
     struct flexsc_sysentry *entry = work->work_entry;
     const unsigned int sysnum = entry->sysnum;
-    struct pt_regs *regs = kmalloc(sizeof(struct pt_regs), GFP_KERNEL);
-
     printk("In flexsc_work_handler\n");
 
-    memset(regs, 0, sizeof(struct pt_regs));
-    regs->di  = entry->args[0];
-    regs->si  = entry->args[1];
-    regs->dx  = entry->args[2];
-    regs->r10 = entry->args[3];
-    regs->r9  = entry->args[4];
-    regs->r8  = entry->args[5];
+	syscall_regs->di  = entry->args[0];
+	syscall_regs->si = entry->args[1];
+    syscall_regs->dx  = entry->args[2];
+    syscall_regs->r10 = entry->args[3];
+    syscall_regs->r9  = entry->args[4];
+    syscall_regs->r8  = entry->args[5];
 
-    entry->sysret = do_syscall(sysnum, regs);
-    printk("%d(%lu,%lu,%lu,%lu,%lu,%lu)->%p\n", sysnum, regs->di, regs->si, regs->dx, regs->r10, regs->r9, regs->r8, &entry->sysret);
-    kfree(regs);
-
+    entry->sysret = do_syscall(sysnum, syscall_regs);
     entry->rstatus = FLEXSC_STATUS_DONE;
-    printk("%d flexsc_work_handler done\n", ++cnt);
     return ;
 }
 
@@ -194,21 +186,21 @@ EXPORT_SYMBOL_GPL(do_flexsc_wait);
 
 long do_flexsc_start_hook(pid_t hooked_pid) 
 {
-    printk("flexsc syscall version hook is here!\n");
+	printk("Processing syscalls...\n");
+	int idx;
+	for (idx = 0; idx<nentry; ++idx) {
+		if (k_sysentry[idx].rstatus == FLEXSC_STATUS_SUBMITTED && \
+			k_sysentry[idx].pid == hooked_pid) {
+			printk("work %ld\n", flexsc_works[idx].work_entry->sysnum);
+			k_sysentry[idx].rstatus = FLEXSC_STATUS_BUSY;
+
+			// open a thread to handle syscall
+			flexsc_work_handler(&flexsc_works[idx]);
+		}
+	}
     return 0;
 }
 EXPORT_SYMBOL_GPL(do_flexsc_start_hook);
-
-void print_sysentry(struct flexsc_sysentry *entry)
-{
-    printk("[%p] %d-%d-%d-%d with %lu,%lu,%lu,%lu,%lu,%lu\n",
-            entry,
-            entry->sysnum, entry->nargs,
-            entry->rstatus, entry->sysret,
-            entry->args[0], entry->args[1],
-            entry->args[2], entry->args[3],
-            entry->args[4], entry->args[5]);
-}
 
 SYSCALL_DEFINE0(flexsc_wait)
 {
@@ -224,7 +216,7 @@ SYSCALL_DEFINE1(flexsc_register, struct flexsc_init_info *, info)
 
 SYSCALL_DEFINE1(flexsc_start_hook, pid_t, hooked_pid)
 {
-	flexsc_start_hook(hooked_pid);
+	do_flexsc_start_hook(hooked_pid);
 	return 0;
 }
 

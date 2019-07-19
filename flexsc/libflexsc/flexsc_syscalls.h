@@ -16,6 +16,8 @@ struct flexsc_sysentry *flexsc_getpid(void);
 struct flexsc_sysentry *flexsc_getppid(void);
 struct flexsc_sysentry *flexsc_read(unsigned int fd, char *buf, size_t count);
 struct flexsc_sysentry *flexsc_write(unsigned int fd, char *buf, size_t count);
+struct flexsc_sysentry *flexsc_open(const char *name, int flag);
+struct flexsc_sysentry *flexsc_close(unsigned int fd);
 struct flexsc_sysentry* flexsc_stat(const char *pathname, struct stat *statbuf);
 struct flexsc_sysentry* flexsc_pthread_create(pthread_t *newthread,
                    const pthread_attr_t *attr,

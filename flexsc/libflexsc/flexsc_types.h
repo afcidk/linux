@@ -2,10 +2,10 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#define SYSCALL_FLEXSC_REGISTER 400
-#define SYSCALL_FLEXSC_WAIT 401
-#define SYSCALL_FLEXSC_HOOK 402
-#define SYSCALL_FLEXSC_EXIT 403
+#define SYSCALL_FLEXSC_REGISTER 430
+#define SYSCALL_FLEXSC_WAIT 431
+#define SYSCALL_FLEXSC_HOOK 432
+#define SYSCALL_FLEXSC_EXIT 433
 
 #define SYSCALL_GETTID 186
 
@@ -34,11 +34,11 @@ struct flexsc_cb {
 
 // 48(8 * 6) + 16(4 * 4) = 64 bytes
 struct flexsc_sysentry {
-    unsigned nargs;
+	unsigned pid;
     unsigned rstatus;
     unsigned sysnum;
     unsigned sysret;
-    struct pt_regs *regs;
+	unsigned long args[6];
 } ____cacheline_aligned_in_smp;
 
 struct flexsc_init_info {

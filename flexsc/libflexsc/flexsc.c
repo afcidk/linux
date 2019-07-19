@@ -171,7 +171,7 @@ flexsc_register(struct flexsc_init_info *info)
     print_init_info(info);
     __flexsc_register(info);
     /* flexsc_hook(); */
-    printf("After register: info->nentry: %d\n", info->nentry);
+    printf("After register: info->nentry: %d %p %p\n", info->nentry, &info->sysentry[0], &info->sysentry[1]);
 
     /* Set global sysentry to registered entry */
     gentry = info->sysentry;
@@ -208,10 +208,19 @@ long flexsc_syscall(unsigned sysnum, unsigned n, unsigned long args[6], struct f
 struct flexsc_sysentry *free_syscall_entry(void)
 {
     int i;
-    for (i = 0; i < SYSENTRY_NUM_DEFAULT; i++) {
+    for (i = 0; i < 64; i++) {
+		printf("free_syscall_find %d %p\n", i, &gentry[i]);
         if (gentry[i].rstatus == FLEXSC_STATUS_FREE) {
-	    printf("Get free space: %d, address: %p\n", i, &gentry[i]);
+			printf("Get free space: %d, address: %p\n", i, &gentry[i]);
+			gentry[i].pid = current_pid;
             return &gentry[i];
         }
     }
+
+	// No available entry
+	syscall(432, current_pid);
+	for (i = 0; i < 64; i++) {
+		gentry[i].rstatus = FLEXSC_STATUS_FREE;
+	}
+	return &gentry[0];
 }

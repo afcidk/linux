@@ -10,7 +10,7 @@ ifneq ($(KERNELPATH),)
 	KDIR	:= $(KERNELPATH)
 else
 	# Default kernel path
-	KDIR	:= /home/splasky/flexsc/linux/
+	KDIR	:= /usr/src/linux-headers-$(shell uname -r)
 endif
 
 ARCH	:= $(shell uname -p)

@@ -327,7 +327,7 @@
 #define __NR_userfaultfd 323
 #define __NR_membarrier 324
 #define __NR_mlock2 325
-#define __NR_flexsc_register 400
-#define __NR_flexsc_wait 401
-#define __NR_flexsc_start_hook 402
-#define __NR_flexsc_exit 403
+#define __NR_flexsc_register 430
+#define __NR_flexsc_wait 431
+#define __NR_flexsc_start_hook 432
+#define __NR_flexsc_exit 433

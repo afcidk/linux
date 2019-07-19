@@ -72,7 +72,8 @@ struct flexsc_cpuinfo {
  * @brief Define syscall entry. It should be same as cache line(64 bytes)
  */
 struct flexsc_sysentry {
-    unsigned nargs;
+	unsigned pid;
+    //unsigned nargs;
     unsigned rstatus;
     unsigned sysnum;
     unsigned sysret;
@@ -107,6 +108,8 @@ struct flexsc_systhread_info {
 
 /* struct workqueue_struct *flexsc_syscalls; */
 
+static struct flexsc_sysentry *k_sysentry;
+static struct pt_regs *syscall_regs;
 void init_syspage(volatile struct flexsc_syspage *);
 void init_sysentry(volatile struct flexsc_sysentry *);
 void alloc_syspage(volatile struct flexsc_syspage *);

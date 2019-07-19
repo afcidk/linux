@@ -9,7 +9,7 @@ inc_loc=/usr/include/
 
 default:
 	sudo cp $(inc) $(inc_loc)
-	gcc -c $(src)
+	gcc -g -c $(src)
 	ar -r $(lib) $(obj)
 	sudo cp $(lib) $(lib_loc)
 	# make -C test

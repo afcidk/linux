@@ -44,9 +44,7 @@ static unsigned long *sys_call_table;
 // static typeof(flexsc_register) *orig_flexsc_register;
 // static typeof(flexsc_exit) *orig_flexsc_exit;
 
-static asmlinkage long (*orig_flexsc_register)(
-	struct flexsc_init_info __user *info);
-static asmlinkage long (*orig_flexsc_exit)(void);
+static asmlinkage long (*orig_flexsc_register)(void);
 
 asmlinkage long syshook_flexsc_register(struct flexsc_init_info __user *info);
 asmlinkage long syshook_flexsc_exit(void);

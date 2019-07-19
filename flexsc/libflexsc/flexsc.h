@@ -32,6 +32,7 @@
 struct flexsc_sysentry *flexsc_register(struct flexsc_init_info *info);
 void flexsc_wait(void);
 int init_info(struct flexsc_init_info *);
+static unsigned current_pid;
 
 /* Globally used sysentry; it's used for free_syscall_entry() */
 static struct flexsc_sysentry *gentry; 
@@ -47,11 +48,12 @@ void flexsc_exit();
 
 static void __flexsc_register(struct flexsc_init_info *info) 
 {
-    printf("%s\n", __func__);
+	current_pid = getpid();
+    printf("%s sycall %d\n", __func__, SYSCALL_FLEXSC_REGISTER);
     syscall(SYSCALL_FLEXSC_REGISTER, info); 
 }
 
 void print_sysentry(struct flexsc_sysentry *entry);
 
-long flexsc_syscall(unsigned sysnum, unsigned n, long args[6], struct flexsc_cb *cb);
+long flexsc_syscall(unsigned sysnum, unsigned n, unsigned long args[6], struct flexsc_cb *cb);
 void init_cpuinfo_default(struct flexsc_cpuinfo *cpuinfo);

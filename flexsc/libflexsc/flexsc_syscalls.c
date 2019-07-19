@@ -7,7 +7,6 @@ struct flexsc_sysentry *flexsc_getppid()
 	struct flexsc_sysentry *entry;
 	entry = free_syscall_entry();
 	entry->sysnum = __NR_getppid;
-	entry->nargs = __ARGS_getppid;
 	entry->rstatus = FLEXSC_STATUS_SUBMITTED;
 	return entry;
 }
@@ -35,6 +34,20 @@ struct flexsc_sysentry *flexsc_write(unsigned int fd, char *buf, size_t count)
 	request_syscall_write(entry, fd, buf, count);
 	return entry;
 }
+struct flexsc_sysentry *flexsc_open(const char *name, int flag) {
+	struct flexsc_sysentry *entry;
+	entry = free_syscall_entry();
+	request_syscall_open(entry, name, flag, 0666);
+	return entry;
+}
+
+struct flexsc_sysentry *flexsc_close(unsigned int fd)
+{
+	struct flexsc_sysentry *entry;
+	entry = free_syscall_entry();
+	request_syscall_close(entry, fd);
+	return entry;
+}
 
 struct flexsc_sysentry *flexsc_stat(const char *pathname, struct stat *statbuf)
 {
@@ -59,9 +72,9 @@ void request_syscall_stat(struct flexsc_sysentry *entry, const char *pathname,
 			  struct stat *statbuf)
 {
 	entry->sysnum = __NR_stat;
-	entry->nargs = __ARGS_stat;
 	entry->rstatus = FLEXSC_STATUS_SUBMITTED;
-	entry->args[0] = (long)pathname;
+	entry->args[0] = (long)strdup(pathname);
+	//entry->args[0] = (long)pathname;
 	entry->args[1] = (long)statbuf;
 }
 
@@ -69,7 +82,6 @@ void request_syscall_read(struct flexsc_sysentry *entry, unsigned int fd,
 			  char *buf, size_t count)
 {
 	entry->sysnum = __NR_read;
-	entry->nargs = __ARGS_read;
 	entry->rstatus = FLEXSC_STATUS_SUBMITTED;
 	entry->args[0] = (long)fd;
 	entry->args[1] = (long)buf;
@@ -80,7 +92,6 @@ void request_syscall_write(struct flexsc_sysentry *entry, unsigned int fd,
 			   char *buf, size_t count)
 {
 	entry->sysnum = __NR_write;
-	entry->nargs = __ARGS_write;
 	entry->rstatus = FLEXSC_STATUS_SUBMITTED;
 	entry->args[0] = (long)fd;
 	entry->args[1] = (long)buf;
@@ -91,17 +102,18 @@ void request_syscall_open(struct flexsc_sysentry *entry, const char *filename,
 			  int flags, mode_t mode)
 {
 	entry->sysnum = __NR_open;
-	entry->nargs = __ARGS_open;
 	entry->rstatus = FLEXSC_STATUS_SUBMITTED;
-	entry->args[0] = (long)filename;
+	entry->args[0] = (long)strdup(filename);
+	printf("%s %p\n", entry->args[0], entry->args[0]);
+	//entry->args[0] = (long)filename;
 	entry->args[1] = (long)flags;
 	entry->args[2] = (long)mode;
+	printf("%x %s, %s\n", entry->args[0], __func__, filename);
 }
 
 void request_syscall_close(struct flexsc_sysentry *entry, unsigned int fd)
 {
 	entry->sysnum = __NR_close;
-	entry->nargs = __ARGS_close;
 	entry->rstatus = FLEXSC_STATUS_SUBMITTED;
 	entry->args[0] = (long)fd;
 }
@@ -109,7 +121,6 @@ void request_syscall_close(struct flexsc_sysentry *entry, unsigned int fd)
 void request_syscall_getpid(struct flexsc_sysentry *entry)
 {
 	entry->sysnum = __NR_getpid;
-	entry->nargs = __ARGS_getpid;
 	entry->rstatus = FLEXSC_STATUS_SUBMITTED;
 }
 
@@ -119,23 +130,6 @@ void request_syscall_pthread_create(struct flexsc_sysentry *entry, pthread_t *ne
                    void *arg)
 {
 	entry->sysnum = __NR_clone;
-	entry->nargs = __ARGS_clone;
-	entry->rstatus = FLEXSC_STATUS_SUBMITTED;
-	char* stackTop = malloc(STACK_SIZE);
-	entry->args[0] = (long)start_routine;
-	entry->args[1] = (long)stackTop;
-	entry->args[2] = (long)CLONE_NEWUTS | SIGCHLD;
-	entry->args[3] = (long)arg;
-	entry->args[4] = NULL;
-}
-
-void request_syscall_pthread_create(struct flexsc_sysentry *entry, pthread_t *newthread,
-                   const pthread_attr_t *attr,
-                   void *(*start_routine)(void *),
-                   void *arg)
-{
-	entry->sysnum = __NR_clone;
-	entry->nargs = __ARGS_clone;
 	entry->rstatus = FLEXSC_STATUS_SUBMITTED;
 	char* stackTop = malloc(STACK_SIZE);
 	entry->args[0] = (long)start_routine;
