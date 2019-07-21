@@ -8,7 +8,6 @@
 #include <linux/kernel.h>
 #include <asm/syscalls.h>
 
-pid_t hooked_task[FLEXSC_MAX_HOOKED];
 const sys_call_ptr_t *sys_ptr;
 
 static struct task_struct *systhread;
@@ -36,7 +35,7 @@ int systhread_main(void *arg)
         ssleep(1);
         for (idx = 0; idx<nentry; ++idx) {
             if (info->sysentry[idx].rstatus == FLEXSC_STATUS_SUBMITTED) {
-                printk("work %ld\n", flexsc_works[idx].work_entry->sysnum);
+                //printk("work %ld\n", flexsc_works[idx].work_entry->sysnum);
                 info->sysentry[idx].rstatus = FLEXSC_STATUS_BUSY;
 
                 // open a thread to handle syscall
@@ -45,23 +44,23 @@ int systhread_main(void *arg)
         }
     }
 
-    printk(KERN_INFO "Thread Stopping\n");
+    //printk(KERN_INFO "Thread Stopping\n");
     do_exit(0);
     return 0;
 }
 
 void flexsc_create_workqueue(char *name) 
 {
-    printk("Creating flexsc workqueue...\n");
+    //printk("Creating flexsc workqueue...\n");
     /* Create workqueue so that systhread can put a work */
     flexsc_workqueue = create_workqueue(name);
-    printk("Address of flexsc_workqueue: %p\n", flexsc_workqueue);
+    //printk("Address of flexsc_workqueue: %p\n", flexsc_workqueue);
 }
 
 static __always_inline long
 do_syscall(unsigned int sysname, struct pt_regs *regs) {
     extern const sys_call_ptr_t sys_call_table[];
-    printk("Do syscall %d\n", sysname);
+    //printk("Do syscall %d\n", sysname);
 
     if (likely(sysname < 500)) {
 		return sys_call_table[sysname](regs);
@@ -74,7 +73,7 @@ struct flexsc_sysentry *do_flexsc_register(struct flexsc_init_info *user_info)
     struct flexsc_init_info *info = kmalloc(sizeof(struct flexsc_init_info), GFP_KERNEL);
     copy_from_user(info, user_info, sizeof(struct flexsc_init_info));
     nentry = info->nentry;
-    printk("nentry: %lu\n", info->nentry);
+    //printk("nentry: %lu\n", info->nentry);
 
     down_read(&current->mm->mmap_sem);
 
@@ -85,7 +84,7 @@ struct flexsc_sysentry *do_flexsc_register(struct flexsc_init_info *user_info)
     up_read(&current->mm->mmap_sem);
 
     syscall_regs = kmalloc(sizeof(struct pt_regs), GFP_KERNEL);
-    flexsc_create_workqueue("flexsc_workqueue");
+    //flexsc_create_workqueue("flexsc_workqueue");
     alloc_workstruct(info);
 	/*
     systhread = kthread_run(systhread_main, info, "systhread_main");
@@ -99,10 +98,10 @@ void alloc_workstruct(struct flexsc_init_info *info)
 {
     int nentry = info->nentry; /* Number of sysentry */
     int i;
-    printk("INFO Allocating work_struct(#%d)\n", nentry);
+    //printk("INFO Allocating work_struct(#%d)\n", nentry);
     flexsc_works = (struct work_struct *)kmalloc(sizeof(struct work_struct) * nentry, GFP_KERNEL);
 
-    printk("Initializing: Binding work_struct and work_handler\n");
+    //printk("Initializing: Binding work_struct and work_handler\n");
     for (i = 0; i < nentry; i++) {
         memset(&(info->sysentry[i]), 0, sizeof(struct flexsc_sysentry));
         FLEXSC_INIT_WORK(&flexsc_works[i], flexsc_work_handler, &(info->sysentry[i]));
@@ -112,7 +111,7 @@ void alloc_workstruct(struct flexsc_init_info *info)
 
 long do_flexsc_exit(void)
 {
-    printk("%s\n", __func__);
+    //printk("%s\n", __func__);
     flexsc_destroy_workqueue(flexsc_workqueue);
     flexsc_free_works(flexsc_works);
     kthread_stop(systhread);
@@ -124,11 +123,11 @@ EXPORT_SYMBOL_GPL(do_flexsc_exit);
 void flexsc_destroy_workqueue(struct workqueue_struct *flexsc_workqueue)
 {
     if (flexsc_workqueue == NULL) {
-        printk("flexsc workqueue is empty!\n");
+        //printk("flexsc workqueue is empty!\n");
         return;
     }
 
-    printk("Destroying flexsc workqueue...\n");
+    //printk("Destroying flexsc workqueue...\n");
     destroy_workqueue(flexsc_workqueue);
 }
 
@@ -136,11 +135,11 @@ void flexsc_free_works(struct work_struct *flexsc_works)
 {
     int i;
     if (flexsc_works == NULL) {
-        printk("flexsc works is empty!\n");
+        //printk("flexsc works is empty!\n");
         return;
     }
 
-    printk("Deallocating flexsc work structs...\n");
+    //printk("Deallocating flexsc work structs...\n");
     for (i=0; i < nentry; ++i)
         kfree(&flexsc_works[i]);
 }
@@ -150,7 +149,7 @@ static __always_inline void flexsc_work_handler(struct work_struct *work)
     /* Here is the place where system calls are actually executed */
     struct flexsc_sysentry *entry = work->work_entry;
     const unsigned int sysnum = entry->sysnum;
-    printk("In flexsc_work_handler\n");
+    //printk("In flexsc_work_handler\n");
 
 	syscall_regs->di  = entry->args[0];
 	syscall_regs->si = entry->args[1];
@@ -169,8 +168,8 @@ long do_flexsc_wait(void)
 {
     /* static struct task_struct *systhread_pool[SYSENTRY_NUM_DEFAULT]; */
     /* int i; */
-    /* printk("Waking up sleeping systhread..."); */
-    printk("%d is going to sleep\n", current->pid);
+    /* //printk("Waking up sleeping systhread..."); */
+    //printk("%d is going to sleep\n", current->pid);
 
     /* user thread goes to sleep */
 
@@ -186,12 +185,11 @@ EXPORT_SYMBOL_GPL(do_flexsc_wait);
 
 long do_flexsc_start_hook(pid_t hooked_pid) 
 {
-	printk("Processing syscalls...\n");
+	//printk("Processing syscalls...\n");
 	int idx;
 	for (idx = 0; idx<nentry; ++idx) {
-		if (k_sysentry[idx].rstatus == FLEXSC_STATUS_SUBMITTED && \
-			k_sysentry[idx].pid == hooked_pid) {
-			printk("work %ld\n", flexsc_works[idx].work_entry->sysnum);
+		if (k_sysentry[idx].rstatus == FLEXSC_STATUS_SUBMITTED){
+			//printk("work %ld\n", flexsc_works[idx].work_entry->sysnum);
 			k_sysentry[idx].rstatus = FLEXSC_STATUS_BUSY;
 
 			// open a thread to handle syscall
