@@ -44,36 +44,18 @@
 #define FLEXSC_MAX_ENTRY 64
 #define FELXSC_MAX_CPUS 4
 
-#define FLEXSC_MAX_HOOKED 100
-
 #define SYSENTRY_NUM_DEFAULT 64
+define BITMAP_ENTRY 64
 
-/* 
- * Maximum Pid default by 32768 
- * sysctl -w kernel.pid_max can change the maximum pid
- * */
-
-#define FLEXSC_MAX_PID 8192
-#define BITMAP_ENTRY 64
-
-/**
- * @brief cache line size can be determined using in-kernel function
- */
-#define FLEXSC_CACHE_LINE_SZIE 64
-
-struct flexsc_cpuinfo {
-    int user_cpu;
-    int kernel_cpu;
-};
-
-
+struct flexsc_strentry {
+	char str[64];
+} ____cacheline_aligned_in_smp;
 // asmlinkage void flexsc_syscall_hook(struct pt_regs *regs)
 /**
  * @brief Define syscall entry. It should be same as cache line(64 bytes)
  */
 struct flexsc_sysentry {
-	unsigned pid;
-    //unsigned nargs;
+    unsigned idx;
     unsigned rstatus;
     unsigned sysnum;
     unsigned sysret;
@@ -83,6 +65,7 @@ struct flexsc_sysentry {
 
 struct flexsc_init_info {
     struct flexsc_sysentry *sysentry; /* Pointer to first sysentry */
+	struct flexsc_strentry *strentry;
     struct flexsc_cpuinfo cpuinfo; 
     size_t npages; /* Number of Syspages */
     size_t nentry; /* # of workers should be equal to # of sysentries */
@@ -109,7 +92,7 @@ struct flexsc_systhread_info {
 /* struct workqueue_struct *flexsc_syscalls; */
 
 static struct flexsc_sysentry *k_sysentry;
-static struct pt_regs *syscall_regs;
+static struct flexsc_strentry *k_strentry;
 void init_syspage(volatile struct flexsc_syspage *);
 void init_sysentry(volatile struct flexsc_sysentry *);
 void alloc_syspage(volatile struct flexsc_syspage *);
@@ -130,8 +113,8 @@ void init_systhread(struct flexsc_init_info *info);
 void create_flexsc_systhread(void);
 
 void flexsc_create_workqueue(char *name);
-void flexsc_destroy_workqueue(struct workqueue_struct *flexsc_workqueue);
-void flexsc_free_works(struct work_struct *flexsc_works);
+void flexsc_destroy_workqueue(void);
+void flexsc_free_works(void);
 void flexsc_stop_systhreads(void);
 
 void flexsc_free_sysinfo(struct flexsc_systhread_info *_sysinfo[]);

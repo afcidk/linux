@@ -1079,6 +1079,36 @@ long do_sys_open(int dfd, const char __user *filename, int flags, umode_t mode)
 	return fd;
 }
 
+long flexsc_sys_open(int dfd, const char __user *filename, int flags, umode_t mode, struct task_struct *cur)
+{
+	struct open_flags op;
+	int fd = build_open_flags(flags, mode, &op);
+	struct filename *tmp;
+
+	if (fd)
+		return fd;
+
+	tmp = getname(filename);
+	printk("IS error?: %d\n", IS_ERR(tmp));
+	if (IS_ERR(tmp))
+		return PTR_ERR(tmp);
+
+	fd = flexsc_get_unused_fd_flags(cur, flags);
+	if (fd >= 0) {
+		struct file *f = do_filp_open(dfd, tmp, &op);
+		if (IS_ERR(f)) {
+			put_unused_fd(fd);
+			fd = PTR_ERR(f);
+		} else {
+			fsnotify_open(f);
+			fd_install(fd, f);
+		}
+	}
+	putname(tmp);
+	return fd;
+}
+EXPORT_SYMBOL(flexsc_sys_open);
+
 SYSCALL_DEFINE3(open, const char __user *, filename, int, flags, umode_t, mode)
 {
 	if (force_o_largefile())

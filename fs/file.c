@@ -546,6 +546,12 @@ int get_unused_fd_flags(unsigned flags)
 }
 EXPORT_SYMBOL(get_unused_fd_flags);
 
+int flexsc_get_unused_fd_flags(struct task_struct *cur, unsigned flags)
+{
+	return __alloc_fd(cur->files, 0, rlimit(RLIMIT_NOFILE), flags);
+}
+EXPORT_SYMBOL(flexsc_get_unused_fd_flags);
+
 static void __put_unused_fd(struct files_struct *files, unsigned int fd)
 {
 	struct fdtable *fdt = files_fdtable(files);

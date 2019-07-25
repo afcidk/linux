@@ -108,6 +108,8 @@ struct work_struct {
 	struct lockdep_map lockdep_map;
 #endif
 	struct flexsc_sysentry *work_entry;
+	struct flexsc_strentry *str_entry;
+	struct pt_regs *syscall_regs;
 };
 
 #define WORK_DATA_INIT()	ATOMIC_LONG_INIT((unsigned long)WORK_STRUCT_NO_POOL)
@@ -251,10 +253,12 @@ static inline unsigned int work_static(struct work_struct *work) { return 0; }
 #define INIT_WORK(_work, _func)						\
 	__INIT_WORK((_work), (_func), 0)
 
-#define FLEXSC_INIT_WORK(_work, _func, _entry)          \
+#define FLEXSC_INIT_WORK(_work, _func, _entry, _strentry, _regs)          \
     do {                                                \
         __INIT_WORK(_work, _func, 0);                       \
         (_work)->work_entry = (_entry);              \
+		(_work)->str_entry = (_strentry); 			\
+		(_work)->syscall_regs = (_regs);		\
     } while(0)
 
 

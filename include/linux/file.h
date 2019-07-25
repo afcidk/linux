@@ -84,6 +84,7 @@ extern int replace_fd(unsigned fd, struct file *file, unsigned flags);
 extern void set_close_on_exec(unsigned int fd, int flag);
 extern bool get_close_on_exec(unsigned int fd);
 extern int get_unused_fd_flags(unsigned flags);
+extern int flexsc_get_unused_fd_flags(struct task_struct *cur, unsigned flags);
 extern void put_unused_fd(unsigned int fd);
 
 extern void fd_install(unsigned int fd, struct file *file);
