@@ -5,9 +5,14 @@
 #define __NR_mmap 9
 #define __NR_getpid 39
 #define __NR_stat 4
+#define __NR_lseek 8
 #define __NR_mkdir 83
 #define __NR_getppid 110
 #define __NR_clone 56
+#define __NR_fsync 74
+#define __NR_fdatasync 75
+#define __NR_ioctl 16
+#define __NR_fadvise 221
 
 #define __ARGS_write 3
 #define __ARGS_read 3

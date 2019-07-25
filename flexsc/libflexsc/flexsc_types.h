@@ -31,18 +31,22 @@ struct flexsc_cb {
     int64_t ret;
 };
 
+struct flexsc_strentry {
+	char str[64];
+};
 
 // 48(8 * 6) + 16(4 * 4) = 64 bytes
 struct flexsc_sysentry {
-	unsigned pid;
+	unsigned idx;
     unsigned rstatus;
     unsigned sysnum;
     unsigned sysret;
 	unsigned long args[6];
-} ____cacheline_aligned_in_smp;
+};
 
 struct flexsc_init_info {
     struct flexsc_sysentry *sysentry; /* Pointer to first sysentry */
+	struct flexsc_strentry *strentry;
     struct flexsc_cpuinfo cpuinfo; /* cpu bound info */
     size_t npages; /* Number of Syspages */
     size_t nentry; /* # of workers should be equal to # of sysentries */

@@ -45,7 +45,7 @@
 #define FELXSC_MAX_CPUS 4
 
 #define SYSENTRY_NUM_DEFAULT 64
-define BITMAP_ENTRY 64
+#define BITMAP_ENTRY 64
 
 struct flexsc_strentry {
 	char str[64];
@@ -62,6 +62,10 @@ struct flexsc_sysentry {
 	unsigned long args[6];
 } ____cacheline_aligned_in_smp;
 
+struct flexsc_cpuinfo {
+	int user_cpu;
+	int kernel_cpu;
+};
 
 struct flexsc_init_info {
     struct flexsc_sysentry *sysentry; /* Pointer to first sysentry */

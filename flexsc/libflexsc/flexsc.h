@@ -36,9 +36,12 @@ static unsigned current_pid;
 
 /* Globally used sysentry; it's used for free_syscall_entry() */
 static struct flexsc_sysentry *gentry; 
+static struct flexsc_strentry *g_strentry;
 
 /* Find free sysentry and returns it */
 struct flexsc_sysentry *free_syscall_entry(void);
+struct flexsc_strentry *free_str_entry(struct flexsc_sysentry*);
+char *flexsc_getbuf(int idx);
 
 void flexsc_hook(void);
 

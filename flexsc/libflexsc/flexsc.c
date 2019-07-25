@@ -75,12 +75,13 @@ int init_map_syspage(struct flexsc_init_info *info)
     size_t pgsize = getpagesize();
     size_t total = pgsize * SYSPAGE_PER_TASK;
     struct flexsc_sysentry *entry;
+	struct flexsc_strentry *str_entry;
 
     info->npages = SYSPAGE_PER_TASK;
     /* entry = (struct flexsc_sysentry *)aligned_alloc(pgsize, info->npages); */
     entry = (struct flexsc_sysentry *)aligned_alloc(pgsize, pgsize * (info->npages));
+	str_entry = (struct flexsc_strentry *)aligned_alloc(pgsize, pgsize * (info->npages));
     /* entry = (struct flexsc_sysentry *)malloc(pgsize); */
-    entry[0].rstatus = 0;
 
     if (entry == NULL) {
         return FLEXSC_ERR_MAPSYSPAGE;
@@ -88,44 +89,8 @@ int init_map_syspage(struct flexsc_init_info *info)
 
     info->nentry = total / sizeof(entry[0]);
     info->sysentry = entry;
+	info->strentry = str_entry;
     info->total_bytes = total;
-
-    /*
-    info->sysentry[0].sysnum = 1;
-    info->sysentry[0].rstatus = 2;
-    info->sysentry[0].nargs = 3;
-    info->sysentry[0].sysret = 4;
-    info->sysentry[0].args[0] = 10;
-    info->sysentry[0].args[1] = 11;
-    info->sysentry[0].args[2] = 12;
-    info->sysentry[0].args[3] = 13;
-    info->sysentry[0].args[4] = 14;
-    info->sysentry[0].args[5] = 15;
-
-    info->sysentry[1].sysnum = 11;
-    info->sysentry[1].rstatus = 22;
-    info->sysentry[1].nargs = 33;
-    info->sysentry[1].sysret = 44;
-    info->sysentry[1].args[0] = 100;
-    info->sysentry[1].args[1] = 110;
-    info->sysentry[1].args[2] = 120;
-    info->sysentry[1].args[3] = 130;
-    info->sysentry[1].args[4] = 140;
-    info->sysentry[1].args[5] = 150;
-
-    info->sysentry[7].sysnum = 7;
-    info->sysentry[7].rstatus = 77;
-    info->sysentry[7].sysret = 777;
-    info->sysentry[7].nargs = 7777;
-    info->sysentry[7].args[0] = 1;
-    info->sysentry[7].args[1] = 2;
-    info->sysentry[7].args[2] = 3;
-    info->sysentry[7].args[3] = 4;
-    info->sysentry[7].args[4] = 5;
-    info->sysentry[7].args[5] = 6;
-
-    print_sysentry(&(info->sysentry[0]));
-    */
 
     return 0;
 }
@@ -168,13 +133,14 @@ flexsc_register(struct flexsc_init_info *info)
 {
     /* Currently default setting is used for correctness */
     init_info(info);
-    print_init_info(info);
+    //print_init_info(info);
     __flexsc_register(info);
     /* flexsc_hook(); */
-    printf("After register: info->nentry: %d %p %p\n", info->nentry, &info->sysentry[0], &info->sysentry[1]);
+    //printf("After register: info->nentry: %d %p %p\n", info->nentry, &info->sysentry[0], &info->sysentry[1]);
 
     /* Set global sysentry to registered entry */
     gentry = info->sysentry;
+	g_strentry = info->strentry;
     return info->sysentry;
 }
 
@@ -208,19 +174,24 @@ long flexsc_syscall(unsigned sysnum, unsigned n, unsigned long args[6], struct f
 struct flexsc_sysentry *free_syscall_entry(void)
 {
     int i;
-    for (i = 0; i < 64; i++) {
-		printf("free_syscall_find %d %p\n", i, &gentry[i]);
-        if (gentry[i].rstatus == FLEXSC_STATUS_FREE) {
-			printf("Get free space: %d, address: %p\n", i, &gentry[i]);
-			gentry[i].pid = current_pid;
-            return &gentry[i];
-        }
-    }
-
-	// No available entry
-	syscall(432, current_pid);
-	for (i = 0; i < 64; i++) {
-		gentry[i].rstatus = FLEXSC_STATUS_FREE;
+	while (1) { // Polling wait empty entry
+		for (i = 0; i < 64; i++) {
+			//printf("free_syscall_find %d %p\n", i, &gentry[i]);
+			if (gentry[i].rstatus == FLEXSC_STATUS_FREE) {
+				gentry[i].idx = i;
+				//printf("Get free space: %d, address: %p\n", i, &gentry[i]);
+				return &gentry[i];
+			}
+		}
 	}
-	return &gentry[0];
+}
+
+struct flexsc_strentry *free_str_entry(struct flexsc_sysentry* entry)
+{
+	return &g_strentry[entry->idx];
+}
+
+char *flexsc_getbuf(int idx)
+{
+	return &g_strentry[idx];
 }

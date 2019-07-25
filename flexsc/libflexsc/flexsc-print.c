@@ -11,7 +11,7 @@
 void print_sysentry(struct flexsc_sysentry *entry)
 {
     printf("%d-%d-%d-%d with %lu %lu %lu %lu %lu %lu\n",
-            entry->sysnum, entry->pid,
+            entry->sysnum, entry->idx,
             entry->rstatus, entry->sysret,
             entry->args[0], entry->args[1],
             entry->args[2], entry->args[3],

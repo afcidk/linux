@@ -10,7 +10,6 @@
 #include <linux/delay.h>
 #define EXP
 
-pid_t hooked_task[FLEXSC_MAX_HOOKED];
 const sys_call_ptr_t *sys_ptr;
 
 static struct task_struct *systhread;
@@ -21,7 +20,7 @@ static struct work_struct *flexsc_works = NULL;
 static void flexsc_work_handler(struct work_struct *work);
 
 static struct page *kernel_page;
-static struct page *kernel_str_page[64];
+static struct page *kernel_str_page;
 size_t nentry; /* Reserved for devel mode */
 
 int systhread_main(void *arg)
@@ -58,7 +57,7 @@ void flexsc_create_workqueue(char *name)
     printk("Creating flexsc workqueue...\n");
 #endif
     /* Create workqueue so that systhread can put a work */
-    flexsc_workqueue = alloc_workqueue(name, WQ_CPU_INTENSIVE, 0);
+    flexsc_workqueue = alloc_workqueue(name, WQ_MEM_RECLAIM | WQ_UNBOUND, 0);
 #ifdef DEBUG
     printk("Address of flexsc_workqueue: %p\n", flexsc_workqueue);
 #endif
